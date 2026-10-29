@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Palabras Pequeñas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: sticky player bar, azulejo-tile hero, card grid of games; masculine = blue, feminine = rose throughout (matches the class slides) */
+:root{
+  --bg:#f3f5fa; --surface:#ffffff; --surface-2:#e8edf7; --ink:#14203a; --muted:#56627f; --line:#d4dbe9;
+  --cobalt:#2449a8; --on-cobalt:#ffffff; --hero:#1f3f95; --tile:rgba(255,255,255,.13);
+  --saffron:#f1b22e; --on-saffron:#3a2700;
+  --masc:#dce6fb; --masc-ink:#1c3d8c; --fem:#fbe2dc; --fem-ink:#992e1e;
+  --good:#1d7f47; --good-bg:#dcf2e4; --near:#9a6400; --near-bg:#fdf0d2; --bad:#bd3c28; --bad-bg:#fbe2dd;
+  --display:'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif;
+  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1323; --surface:#161f36; --surface-2:#1f2a46; --ink:#e7ecf7; --muted:#9ca8c6; --line:#2b3758;
+  --cobalt:#7b9cf2; --on-cobalt:#0b1330; --hero:#192b61; --tile:rgba(255,255,255,.08);
+  --saffron:#f3bd48; --on-saffron:#2c1d00;
+  --masc:#1e305e; --masc-ink:#bcd0fb; --fem:#47231e; --fem-ink:#f7bcae;
+  --good:#64d193; --good-bg:#12301f; --near:#f1c35c; --near-bg:#36290b; --bad:#f2907c; --bad-bg:#3b1a14;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1323; --surface:#161f36; --surface-2:#1f2a46; --ink:#e7ecf7; --muted:#9ca8c6; --line:#2b3758;
+  --cobalt:#7b9cf2; --on-cobalt:#0b1330; --hero:#192b61; --tile:rgba(255,255,255,.08);
+  --saffron:#f3bd48; --on-saffron:#2c1d00;
+  --masc:#1e305e; --masc-ink:#bcd0fb; --fem:#47231e; --fem-ink:#f7bcae;
+  --good:#64d193; --good-bg:#12301f; --near:#f1c35c; --near-bg:#36290b; --bad:#f2907c; --bad-bg:#3b1a14;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+h1,h2,h3{font-family:var(--display);font-weight:800;line-height:1.1;text-wrap:balance;margin:0}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--saffron);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.m{background:var(--masc);color:var(--masc-ink)}
+.f{background:var(--fem);color:var(--fem-ink)}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:14px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--display);font-weight:800;font-size:1.1rem;color:var(--cobalt)}
+.brand-tile{width:30px;height:30px;border-radius:7px;flex:none}
+.player{margin-left:auto;display:flex;align-items:center;gap:12px;min-width:0}
+.lvl-tile{width:46px;height:46px;flex:none;border-radius:11px;background:var(--saffron);color:var(--on-saffron);display:grid;place-items:center;align-content:center;font-family:var(--display);font-weight:800;font-size:1.3rem;line-height:1}
+.lvl-tile small{font:500 .58rem var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.pinfo{min-width:0;display:grid;gap:4px}
+.pname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.ptitle{color:var(--muted);font-weight:500}
+.xpbar{height:8px;width:min(190px,32vw);background:var(--surface-2);border-radius:99px;overflow:hidden}
+.xpbar i{display:block;height:100%;background:var(--saffron);border-radius:99px;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.xptext{font:500 .72rem var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.iconbtn{background:var(--surface-2);border:0;border-radius:10px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer;flex:none;color:var(--muted)}
+.iconbtn[aria-pressed="true"]{color:var(--cobalt)}
+.iconbtn svg{width:20px;height:20px}
+@media (max-width:520px){.ptitle,.xptext{display:none}.brand span{display:none}}
+
+/* tiles */
+.tiles{background-color:var(--hero);background-image:
+  radial-gradient(circle at 50% 50%, var(--tile) 0 5px, transparent 6px),
+  radial-gradient(circle at 0 0, transparent 13px, var(--tile) 14px 16px, transparent 17px),
+  radial-gradient(circle at 100% 0, transparent 13px, var(--tile) 14px 16px, transparent 17px),
+  radial-gradient(circle at 0 100%, transparent 13px, var(--tile) 14px 16px, transparent 17px),
+  radial-gradient(circle at 100% 100%, transparent 13px, var(--tile) 14px 16px, transparent 17px);
+  background-size:40px 40px}
+.brand-tile.tiles{background-size:30px 30px}
+
+main{padding-block:24px 64px}
+.view{display:grid;gap:28px}
+
+/* hero */
+.hero{border-radius:22px;color:#fff;padding:clamp(22px,4vw,40px);display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:center}
+.hero h1{font-size:clamp(2.3rem,6vw,3.8rem);letter-spacing:-.02em;color:#fff}
+.hero h1 em{font-style:normal;color:var(--saffron)}
+.hero p{color:rgba(255,255,255,.88);max-width:46ch;margin-top:12px;font-size:1.05rem}
+.hero .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.pcard{background:var(--surface);color:var(--ink);border-radius:16px;padding:20px;display:grid;gap:14px}
+.pcard .row{display:flex;gap:14px;align-items:center}
+.pcard .big .lvl-tile{width:64px;height:64px;font-size:1.9rem;border-radius:14px}
+.pcard label{font-weight:600;font-size:.9rem}
+.namerow{display:flex;gap:8px}
+input[type=text]{font:inherit;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);min-width:0;flex:1}
+@media (max-width:760px){.hero{grid-template-columns:1fr}}
+
+.btn{border:0;border-radius:12px;padding:11px 18px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn.primary{background:var(--saffron);color:var(--on-saffron)}
+.btn.blue{background:var(--cobalt);color:var(--on-cobalt)}
+.btn.soft{background:var(--surface-2);color:var(--ink)}
+.btn.onhero{background:rgba(255,255,255,.14);color:#fff}
+.btn:hover{filter:brightness(1.06)}
+.ghost{background:none;border:0;cursor:pointer;color:var(--muted);font-weight:600;padding:6px 0}
+
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sechead h2{font-size:1.6rem}
+.sechead p{color:var(--muted)}
+.eyebrow{font:500 .72rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* game grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.gcard{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;text-align:left;cursor:pointer;transition:transform .15s,border-color .15s}
+.gcard:hover:not(:disabled){transform:translateY(-3px);border-color:var(--cobalt)}
+.gcard .top-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gcard h3{font-size:1.35rem}
+.gcard p{color:var(--muted);font-size:.95rem;flex:1}
+.gcard .play{font-weight:700;color:var(--cobalt)}
+.chip{font:500 .72rem var(--mono);letter-spacing:.06em;padding:4px 9px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.stars{display:inline-flex;gap:2px}
+.stars svg{width:18px;height:18px;fill:var(--surface-2);stroke:var(--line)}
+.stars svg.on{fill:var(--saffron);stroke:var(--saffron)}
+.gcard.boss{grid-column:1/-1;background:var(--hero);color:#fff;border-color:transparent;flex-direction:row;align-items:center;flex-wrap:wrap;gap:16px 24px}
+.gcard.boss .tiles-mini{width:72px;height:72px;border-radius:16px;flex:none;background-color:var(--saffron);display:grid;place-items:center}
+.gcard.boss .tiles-mini svg{width:40px;height:40px;fill:var(--on-saffron)}
+.gcard.boss p{color:rgba(255,255,255,.85)}
+.gcard.boss .play{color:var(--saffron)}
+.gcard.boss .chip{background:rgba(255,255,255,.15);color:#fff}
+.gcard.boss>div{flex:1;min-width:200px;display:grid;gap:6px}
+.gcard:disabled{cursor:not-allowed;opacity:.75}
+
+.studycard{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.studycard>div{flex:1;min-width:220px}
+.studycard h3{font-size:1.3rem;margin-bottom:4px}
+.studycard p{color:var(--muted)}
+
+/* badges */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.badge{background:var(--surface);border:1.5px dashed var(--line);border-radius:14px;padding:14px;display:grid;gap:4px;opacity:.6}
+.badge.on{border-style:solid;border-color:var(--saffron);opacity:1}
+.badge b{font-family:var(--display);font-size:1.05rem}
+.badge span{font-size:.85rem;color:var(--muted)}
+
+/* game */
+.game{display:grid;gap:16px;max-width:760px}
+.gamebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gb-title{font-family:var(--display);font-weight:800;font-size:1.2rem;flex:1}
+.gb-stats{display:flex;gap:10px;align-items:center;font:500 .85rem var(--mono);font-variant-numeric:tabular-nums}
+.gb-stats>span{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px 10px;display:inline-flex;gap:5px;align-items:center}
+.gb-stats svg{width:16px;height:16px}
+.streak svg{fill:var(--muted)}
+.streak.hot{border-color:var(--saffron)!important}
+.streak.hot svg{fill:var(--saffron)}
+.hearts svg{fill:var(--bad)}
+.hearts svg.lost{fill:var(--surface-2)}
+.progress{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--cobalt);transition:width .4s}
+.qcard{background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:clamp(18px,4vw,32px);display:grid;gap:16px}
+.qmeta{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.qnum{font:500 .8rem var(--mono);color:var(--muted)}
+.instr{font-weight:600;color:var(--muted)}
+.prompt{font-family:var(--display);font-weight:600;font-size:clamp(1.8rem,6vw,2.6rem);line-height:1.2;text-align:center;overflow-wrap:anywhere}
+.blank{display:inline-block;min-width:2.6em;border-bottom:4px solid var(--saffron);color:var(--saffron);text-align:center}
+.owner{font-family:var(--body);font-size:.55em;font-weight:600;background:var(--surface-2);border-radius:8px;padding:2px 10px;vertical-align:middle;color:var(--muted)}
+.hint{text-align:center;color:var(--muted);font-style:italic}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{position:relative;border:2px solid var(--line);background:var(--bg);border-radius:14px;padding:16px 12px;font-family:var(--display);font-weight:600;font-size:1.45rem;cursor:pointer;transition:transform .1s,border-color .15s}
+.opt:hover:not(:disabled){border-color:var(--cobalt);transform:translateY(-2px)}
+.opt kbd{position:absolute;top:6px;left:9px;font:500 .7rem var(--mono);color:var(--muted)}
+.opt.m,.opt.f{border-color:transparent}
+.opt.correct{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad);animation:shake .35s}
+.opt:disabled{cursor:default}
+.opt:disabled:not(.correct):not(.wrong){opacity:.55}
+.typerow{display:flex;gap:10px}
+.typerow input{font-family:var(--display);font-size:1.4rem;text-align:center}
+.typerow input.correct{border-color:var(--good);background:var(--good-bg)}
+.typerow input.near{border-color:var(--near);background:var(--near-bg)}
+.typerow input.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.accents{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.accents button{width:44px;height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);font-size:1.15rem;font-weight:600;cursor:pointer}
+.spot{font-family:var(--display);font-size:clamp(1.3rem,4.5vw,1.8rem);line-height:2;text-align:center;font-weight:600}
+.sw{background:none;border:0;border-bottom:3px dotted var(--line);padding:0 4px;margin:0 2px;cursor:pointer;font:inherit;border-radius:6px}
+.sw:hover:not(:disabled){background:var(--surface-2);border-bottom-color:var(--cobalt)}
+.sw.correct{background:var(--good-bg);color:var(--good);border-bottom-color:var(--good)}
+.sw.wrong{background:var(--bad-bg);color:var(--bad);border-bottom-color:var(--bad)}
+.sw .was{text-decoration:line-through;opacity:.6;margin-right:6px}
+.sw:disabled{cursor:default}
+.fb{border-radius:14px;padding:16px 18px;display:grid;gap:10px;animation:rise .25s ease-out}
+.fb.good{background:var(--good-bg)}
+.fb.near{background:var(--near-bg)}
+.fb.bad{background:var(--bad-bg)}
+.fb h3{font-size:1.25rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fb.good h3{color:var(--good)}.fb.near h3{color:var(--near)}.fb.bad h3{color:var(--bad)}
+.fb h3 span{font:500 .85rem var(--mono)}
+.fb p{max-width:65ch}
+.fb .btn{justify-self:end}
+.scene{width:100%;max-width:420px;justify-self:center;height:auto}
+.scene .ground{stroke:var(--line);stroke-width:2}
+.scene .speaker{stroke:var(--ink);stroke-width:2.5;fill:none;stroke-linecap:round}
+.scene .speaker circle{fill:var(--surface-2)}
+.scene .lab{font:500 10px var(--mono);fill:var(--muted);text-anchor:middle}
+.scene .dot{fill:var(--line)}
+.scene .thing{fill:var(--saffron)}
+.scene .thinglab{font:600 11px var(--body);fill:var(--ink);text-anchor:middle}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@keyframes rise{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* results */
+.results{max-width:680px;display:grid;gap:18px}
+.rcard{background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:clamp(20px,4vw,36px);display:grid;gap:18px;text-align:center}
+.rcard h2{font-size:clamp(2rem,6vw,2.8rem)}
+.rcard .stars{justify-content:center}
+.rcard .stars svg{width:44px;height:44px}
+.rstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.rstats div{background:var(--surface-2);border-radius:12px;padding:12px 6px;display:grid}
+.rstats b{font-family:var(--display);font-size:1.6rem;font-variant-numeric:tabular-nums}
+.rstats span{font-size:.8rem;color:var(--muted)}
+.ractions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.review{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:10px}
+.review h3{font-size:1.2rem}
+.review ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.review li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
+.review li b{color:var(--good)}
+
+/* study guide */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.tab{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 16px;font-weight:600;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--cobalt);color:var(--on-cobalt);border-color:var(--cobalt)}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:clamp(18px,4vw,34px);display:grid;gap:20px}
+.panel h2{font-size:clamp(1.6rem,4vw,2.1rem)}
+.panel h3{font-size:1.2rem}
+.panel p,.panel li{max-width:68ch}
+.panel ul,.panel ol{margin:0;padding-left:1.3em;display:grid;gap:4px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:separate;border-spacing:4px;min-width:460px;width:100%}
+th,td{padding:10px 12px;border-radius:8px;text-align:center}
+th{font-size:.85rem;font-weight:700}
+td{font-family:var(--display);font-weight:600;font-size:1.15rem;background:var(--surface-2)}
+td.m,td.f,th.m,th.f{}
+td small{display:block;font:500 .75rem var(--body);opacity:.75}
+th.rowh,td.rowh{text-align:left;font-family:var(--body);font-size:.9rem;font-weight:700;background:none}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+.box{background:var(--surface-2);border-radius:14px;padding:16px 18px;display:grid;gap:8px;min-width:0}
+.box.tip{background:var(--near-bg)}
+.ex{font-family:var(--display);font-weight:600}
+.wordlist{list-style:none;padding:0!important;display:flex!important;flex-wrap:wrap;gap:8px!important}
+.wordlist li{padding:6px 12px;border-radius:10px;font-weight:600}
+.wordlist li span{font-weight:400;opacity:.8}
+.panel .go{justify-self:start}
+
+/* toasts / modal */
+#toasts{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px;z-index:50}
+.toast{background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 16px;max-width:300px;animation:rise .3s;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast b{color:var(--saffron);display:block;font-family:var(--display)}
+#modal{position:fixed;inset:0;background:rgba(8,12,25,.6);z-index:60;display:grid;place-items:center;padding:16px}
+.mcard{background:var(--surface);border-radius:22px;padding:30px;text-align:center;display:grid;gap:12px;justify-items:center;max-width:360px;width:100%;animation:pop .4s cubic-bezier(.2,1.4,.4,1)}
+.mcard .lvl-tile{width:96px;height:96px;font-size:2.8rem;border-radius:22px}
+.mcard h2{font-size:2rem}
+.mcard p{color:var(--muted)}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <button class="brand" data-act="home" aria-label="Home"><span class="brand-tile tiles"></span><span>Palabras Pequeñas</span></button>
+    <div class="player">
+      <div class="lvl-tile" aria-label="Level"><small>Lv</small><span id="t-lvl">1</span></div>
+      <div class="pinfo">
+        <div class="pname"><span id="t-name">Player</span> · <span class="ptitle" id="t-title">Novato</span></div>
+        <div class="xpbar"><i id="t-bar" style="width:0"></i></div>
+        <div class="xptext" id="t-xp">0 / 100 XP</div>
+      </div>
+      <button class="iconbtn" id="soundbtn" data-act="sound" aria-pressed="false" aria-label="Sound effects"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="v-home" class="view"></section>
+  <section id="v-learn" class="view" hidden></section>
+  <section id="v-game" class="view" hidden></section>
+  <section id="v-results" class="view" hidden></section>
+</main>
+<div id="toasts" aria-live="polite"></div>
+<div id="modal" hidden></div>
+
+<script>
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const strip=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const gname=g=>g==='m'?'masculine':'feminine';
+const flip=g=>g==='m'?'f':'m';
+const BLANK='<span class="blank">___</span>';
+
+/* ---------- profile ---------- */
+const STORE='palabras-pequenas-v1';
+let P={name:'',xp:0,best:{},badges:[],played:{},sound:false};
+try{const s=JSON.parse(localStorage.getItem(STORE)||'null');if(s)P=Object.assign(P,s)}catch(e){}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(P))}catch(e){}}
+
+const need=l=>50*(l-1)*l;
+const lvl=xp=>{let l=1;while(xp>=need(l+1))l++;return l};
+const TITLES=[['Novato','Beginner'],['Explorador','Explorer'],['Aprendiz','Apprentice'],['Detective','Detective'],['Experto','Expert'],['Maestro','Master'],['Campeón','Champion'],['Genio','Genius'],['Leyenda','Legend'],['Leyenda dorada','Golden legend']];
+const title=l=>TITLES[Math.min(l-1,TITLES.length-1)];
+const BADGES=[
+ {id:'study',es:'Estudioso',en:'Open the study guide'},
+ {id:'first',es:'Primeros pasos',en:'Finish your first round'},
+ {id:'perfect',es:'¡Perfecto!',en:'Score 10 out of 10 in a round'},
+ {id:'streak10',es:'En racha',en:'Get 10 answers right in a row'},
+ {id:'explorer',es:'Explorador',en:'Play all six games'},
+ {id:'boss',es:'Jefe vencido',en:'Beat the Final Boss'}];
+
+/* ---------- vocabulary ---------- */
+// word, gender, english, plural, english plural, exception flag (ma = masculine ending in -a, fo = feminine ending in -o)
+const RAW=[
+ ['perro','m','dog','perros','dogs'],['libro','m','book','libros','books'],['gato','m','cat','gatos','cats'],
+ ['chico','m','boy','chicos','boys'],['toro','m','bull','toros','bulls'],['zapato','m','shoe','zapatos','shoes'],
+ ['cuaderno','m','notebook','cuadernos','notebooks'],['árbol','m','tree','árboles','trees'],['camión','m','truck','camiones','trucks'],
+ ['avión','m','plane','aviones','planes'],['lápiz','m','pencil','lápices','pencils'],['pez','m','fish','peces','fish'],
+ ['rey','m','king','reyes','kings'],['profesor','m','teacher','profesores','teachers'],['reloj','m','watch','relojes','watches'],
+ ['coche','m','car','coches','cars'],['cine','m','cinema','cines','cinemas'],
+ ['día','m','day','días','days','ma'],['mapa','m','map','mapas','maps','ma'],['planeta','m','planet','planetas','planets','ma'],
+ ['sofá','m','sofa','sofás','sofas','ma'],['clima','m','climate','climas','climates','ma'],['problema','m','problem','problemas','problems','ma'],
+ ['tema','m','topic','temas','topics','ma'],['idioma','m','language','idiomas','languages','ma'],['poema','m','poem','poemas','poems','ma'],
+ ['sistema','m','system','sistemas','systems','ma'],['programa','m','program','programas','programs','ma'],
+ ['casa','f','house','casas','houses'],['manzana','f','apple','manzanas','apples'],['silla','f','chair','sillas','chairs'],
+ ['bolsa','f','bag','bolsas','bags'],['mesa','f','table','mesas','tables'],['ventana','f','window','ventanas','windows'],
+ ['chica','f','girl','chicas','girls'],['montaña','f','mountain','montañas','mountains'],['mujer','f','woman','mujeres','women'],
+ ['ley','f','law','leyes','laws'],['flor','f','flower','flores','flowers'],['ciudad','f','city','ciudades','cities'],
+ ['luz','f','light','luces','lights'],['voz','f','voice','voces','voices'],['nariz','f','nose','narices','noses'],
+ ['canción','f','song','canciones','songs'],['lección','f','lesson','lecciones','lessons'],
+ ['mano','f','hand','manos','hands','fo'],['radio','f','radio','radios','radios','fo'],['foto','f','photo','fotos','photos','fo'],['moto','f','motorbike','motos','motorbikes','fo']];
+const NOUNS=RAW.map(([w,g,en,pl,enPl,x])=>({w,g,en,pl,enPl,x}));
+
+function genderWhy(n){
+  const a=n.g==='m'?'el':'la', end=strip(n.w).slice(-1);
+  if(n.x==='ma') return `<b>${n.w}</b> ends in -a but it is <b>masculine</b>. It is one of the exceptions: <b>el ${n.w}</b>.`+(n.w.endsWith('ma')?' Many words ending in <b>-ma</b> (el problema, el tema, el sistema…) are masculine.':'');
+  if(n.x==='fo') return `<b>${n.w}</b> ends in -o but it is <b>feminine</b>. It is one of the exceptions: <b>la ${n.w}</b>.`+(n.w==='foto'?' It is short for <i>la fotografía</i>.':n.w==='moto'?' It is short for <i>la motocicleta</i>.':'');
+  if(end==='o') return `<b>${n.w}</b> ends in -o, and nouns ending in -o are usually <b>masculine</b>: <b>el ${n.w}</b>.`;
+  if(end==='a') return `<b>${n.w}</b> ends in -a, and nouns ending in -a are usually <b>feminine</b>: <b>la ${n.w}</b>.`;
+  let extra='';
+  if(n.w.endsWith('ción')) extra=' Tip: nouns ending in <b>-ción</b> are always feminine.';
+  if(n.w.endsWith('dad')) extra=' Tip: nouns ending in <b>-dad</b> are always feminine.';
+  return `<b>${n.w}</b> ends in ${end==='e'?'-e':'a consonant'}, so the -o/-a rule does not help. You need to learn it: <b>${a} ${n.w}</b> is ${gname(n.g)}.`+extra;
+}
+function pluralWhy(n){
+  const end=strip(n.w).slice(-1); let r;
+  if('aeiou'.includes(end)) r=`<b>${n.w}</b> ends in a vowel, so add <b>-s</b>: ${n.w} → <b>${n.pl}</b>.`;
+  else if(end==='z') r=`<b>${n.w}</b> ends in <b>-z</b>, so change the z to c and add <b>-es</b>: ${n.w} → <b>${n.pl}</b>.`;
+  else if(end==='y') r=`<b>${n.w}</b> ends in <b>-y</b>, so add <b>-es</b>: ${n.w} → <b>${n.pl}</b>.`;
+  else r=`<b>${n.w}</b> ends in a consonant, so add <b>-es</b>: ${n.w} → <b>${n.pl}</b>.`;
+  if(/[áéíóú]/.test(n.w)&&!/[áéíóú]/.test(n.pl)) r+=` Notice that the written accent disappears in the plural, because the new syllable makes the word follow the normal stress rules.`;
+  return r;
+}
+
+/* ---------- articles ---------- */
+const ART={d:{m:['el','los'],f:['la','las']},i:{m:['un','unos'],f:['una','unas']}};
+const art=(g,def,pl)=>ART[def?'d':'i'][g][pl?1:0];
+function artInfo(a){for(const t of['d','i'])for(const g of['m','f'])for(const p of[0,1])if(ART[t][g][p]===a)return{def:t==='d',g,pl:!!p}}
+function artDesc(a){const i=artInfo(a);return `<b>${a}</b> is ${gname(i.g)} ${i.pl?'plural':'singular'} and ${i.def?'definite (“the”)':(i.pl?'indefinite (“some”)':'indefinite (“a/an”)')}`}
+function engHint(n,def,pl){const e=pl?n.enPl:n.en;return def?`the ${e}`:pl?`some ${e}`:`${/^[aeiou]/.test(e)?'an':'a'} ${e}`}
+
+function qArticle(){
+  if(Math.random()<.07) return {kind:'choice',topic:'Articles',instr:'Choose the correct article.',key:'agua',prompt:`${BLANK} agua`,hint:'(the water)',
+    options:shuffle(['el','la','los','las']),answer:'el',review:'___ agua (the water)',
+    why:c=>`Agua is a special case. It is <b>feminine</b>, but it takes <b>el</b> in the singular to avoid the sound clash “la agua”. Adjectives stay feminine: <i>el agua está fría</i>.`,
+    ok:`<b>el agua</b> = the water. Agua is feminine, but takes <b>el</b> to avoid the sound clash “la agua”. Adjectives stay feminine: <i>el agua está fría</i>.`};
+  const n=rnd(NOUNS),def=Math.random()<.5,pl=Math.random()<.5,word=pl?n.pl:n.w,ans=art(n.g,def,pl),hint=engHint(n,def,pl);
+  const opts=[ans,art(n.g,!def,pl),art(flip(n.g),def,pl),art(n.g,def,!pl)];
+  const ex=n.x?' '+genderWhy(n):'';
+  return {kind:'choice',topic:'Articles',instr:'Choose the correct article. The English hint tells you “the” or “a/some”.',key:'a'+ans+word,
+    prompt:`${BLANK} ${word}`,hint:`(${hint})`,options:shuffle(opts),answer:ans,review:`___ ${word} (${hint})`,
+    ok:`<b>${ans} ${word}</b> = ${hint}.`+ex,
+    why:c=>`${cap(artDesc(c))}. But <b>${word}</b> is ${gname(n.g)} ${pl?'plural':'singular'}, and the English says “${def?'the':pl?'some':'a/an'}”, so you need <b>${ans} ${word}</b>.`+ex};
+}
+function qGender(){
+  const n=rnd(NOUNS),ans=n.g==='m'?'el':'la';
+  return {kind:'choice',topic:'Gender',instr:'Is this noun masculine or feminine? Choose el or la.',key:'g'+n.w,
+    prompt:`${BLANK} ${n.w}`,hint:`(the ${n.en})`,options:['el','la'],optClass:o=>o==='el'?'m':'f',answer:ans,review:`___ ${n.w} (the ${n.en})`,
+    ok:(n.x?'Nice, that is a tricky one! ':`<b>${ans} ${n.w}</b> = the ${n.en}. `)+(n.x?genderWhy(n):''),
+    why:c=>genderWhy(n)};
+}
+function qPlural(){
+  const n=rnd(NOUNS),s=art(n.g,true,false),p=art(n.g,true,true);
+  return {kind:'type',topic:'Plurals',instr:'Write the plural. Use the accent buttons if you need them.',key:'p'+n.w,
+    prompt:`${s} ${n.w} → ${p} ${BLANK}`,hint:`(the ${n.en} → the ${n.enPl})`,answer:n.pl,review:`${s} ${n.w} → ${p} ___`,
+    check(v){const a=v.trim().toLowerCase();
+      if(a===n.pl) return {status:'right',html:`<b>${p} ${n.pl}</b> = the ${n.enPl}. ${pluralWhy(n)}`};
+      if(strip(a)===strip(n.pl)) return {status:'near',html:`Check the accent: it is written <b>${n.pl}</b>. ${pluralWhy(n)}`};
+      return {status:'wrong',html:`You wrote <b>${esc(a)}</b>. ${pluralWhy(n)}`}}};
+}
+
+/* ---------- demonstratives ---------- */
+const DEM=[['este','esta','estos','estas'],['ese','esa','esos','esas'],['aquel','aquella','aquellos','aquellas']];
+const NEUT=['esto','eso','aquello'],ADV=['aquí','ahí','allí'];
+const ZONE=['next to the speaker','near the speaker','far away from the speaker'];
+const FORM=['masculine singular','feminine singular','masculine plural','feminine plural'];
+const FAM=['este / esta / estos / estas','ese / esa / esos / esas','aquel / aquella / aquellos / aquellas'];
+const demIdx=(g,pl)=>(pl?2:0)+(g==='f'?1:0);
+function demDesc(f){for(let d=0;d<3;d++){const i=DEM[d].indexOf(f);if(i>-1)return `<b>${f}</b> is ${FORM[i]} and is used for things ${ZONE[d]}`}
+  let d=NEUT.indexOf(f);if(d>-1)return `<b>${f}</b> is the neutral form for things ${ZONE[d]}`;
+  d=ADV.indexOf(f);return `<b>${f}</b> means ${['“here” (next to the speaker)','“there” (near the speaker)','“over there” (far away)'][d]}`}
+function scene(d,label){
+  const xs=[100,185,292];
+  return `<svg class="scene" viewBox="0 0 330 100" role="img" aria-label="The ${label} is ${ZONE[d]}">
+  <line class="ground" x1="8" y1="76" x2="322" y2="76"/>
+  <g class="speaker"><circle cx="36" cy="28" r="10"/><path d="M36 38v20M36 44l-11 8M36 44l11 8M36 58l-9 17M36 58l9 17"/></g>
+  <text class="lab" x="36" y="95">speaker</text>
+  ${xs.map((x,i)=>i===d?`<rect class="thing" x="${x-15}" y="46" width="30" height="30" rx="6"/><text class="thinglab" x="${x}" y="38">${label}</text>`:`<circle class="dot" cx="${x}" cy="72" r="4"/>`).join('')}
+  ${xs.map((x,i)=>`<text class="lab" x="${x}" y="95">${['next to','near','far'][i]}</text>`).join('')}
+  </svg>`;
+}
+function qDemo(){
+  const r=Math.random(),d=Math.floor(Math.random()*3),n=rnd(NOUNS);
+  if(r<.2){ // place adverb
+    const sub=art(n.g,true,false);
+    return {kind:'choice',topic:'Demonstratives',instr:'Look at the picture. Where is it?',visual:scene(d,n.w),key:'adv'+n.w+d,
+      prompt:`${cap(sub)} ${n.w} está ${BLANK}`,hint:`(Where is the ${n.en}?)`,options:ADV.slice(),answer:ADV[d],review:`${cap(sub)} ${n.w} está ___ (${ZONE[d]})`,
+      ok:`<b>${ADV[d]}</b>: the ${n.en} is ${ZONE[d]}. Aquí → next to you, ahí → near you, allí → far away.`,
+      why:c=>`${cap(demDesc(c))}. The ${n.en} is ${ZONE[d]}, so the answer is <b>${ADV[d]}</b>. Aquí → next to you, ahí → near you, allí → far away.`};
+  }
+  if(r<.33){ // neutral
+    const opts=shuffle([NEUT[d],NEUT[(d+1)%3],DEM[d][0],DEM[d][1]]);
+    return {kind:'choice',topic:'Demonstratives',instr:'You point at something and you don’t know what it is. Look where it is.',visual:scene(d,'???'),key:'neu'+d,
+      prompt:`¿Qué es ${BLANK}?`,hint:'(What is this/that?)',options:opts,answer:NEUT[d],review:`¿Qué es ___? (unknown thing ${ZONE[d]})`,
+      ok:`<b>¿Qué es ${NEUT[d]}?</b> When you don’t know or don’t name the thing, use the neutral form: esto, eso, aquello.`,
+      why:c=>`${cap(demDesc(c))}. When there is no noun after it (you don’t know what the thing is), use the neutral form. The thing is ${ZONE[d]}, so: <b>${NEUT[d]}</b>.`+(DEM[d].includes(c)?` <b>${c}</b> needs a noun after it, like <i>${c} libro</i>.`:'')};
+  }
+  const pl=Math.random()<.5,word=pl?n.pl:n.w,i=demIdx(n.g,pl),ans=DEM[d][i];
+  const opts=[ans,DEM[d][i^1],DEM[(d+1)%3][i],DEM[(d+2)%3][i^2]];
+  const en=(d===0?(pl?'these ':'this '):(pl?'those ':'that '))+(pl?n.enPl:n.en);
+  const ex=n.x?' '+genderWhy(n):'';
+  return {kind:'choice',topic:'Demonstratives',instr:'Look at the distance in the picture and choose the demonstrative.',visual:scene(d,word),key:'d'+ans+word,
+    prompt:`${BLANK} ${word}`,hint:`(${en})`,options:shuffle(opts),answer:ans,review:`___ ${word} (${ZONE[d]})`,
+    ok:`<b>${ans} ${word}</b>: ${ZONE[d]} → ${FAM[d]}.`+ex,
+    why:c=>`${cap(demDesc(c))}. The ${pl?n.enPl:n.en} ${pl?'are':'is'} <b>${ZONE[d]}</b>, so use the <b>${FAM[d]}</b> family. <b>${word}</b> is ${FORM[i]}, so: <b>${ans} ${word}</b>.`+ex};
+}
+
+/* ---------- possessives ---------- */
+const OWN=[['yo','my','1s'],['tú','your','2s'],['él','his','3'],['ella','her','3'],['usted','your (formal)','3'],['nosotros','our','1p'],['nosotras','our','1p'],['vosotros','your (you all)','2p'],['vosotras','your (you all)','2p'],['ellos','their','3'],['ellas','their','3'],['ustedes','your (you all, formal)','3']].map(([w,en,p])=>({w,en,p}));
+function pos(p,g,pl){
+  if(p==='1s')return pl?'mis':'mi'; if(p==='2s')return pl?'tus':'tu'; if(p==='3')return pl?'sus':'su';
+  return (p==='1p'?'nuestr':'vuestr')+(g==='f'?'a':'o')+(pl?'s':'');
+}
+function posDesc(c){
+  const d={mi:'means “my” with one thing',mis:'means “my” with more than one thing',tu:'means “your” (tú) with one thing',tus:'means “your” (tú) with more than one thing',
+    su:'means “his / her / their / your (usted, ustedes)” with one thing',sus:'means “his / her / their / your (usted, ustedes)” with more than one thing'};
+  if(d[c])return `<b>${c}</b> ${d[c]}`;
+  const own=c.startsWith('nuestr')?'“our”':'“your” (vosotros/vosotras)';
+  const g=c.match(/[ao]s?$/)[0];
+  return `<b>${c}</b> means ${own} with a ${g[0]==='a'?'feminine':'masculine'} ${g.length>1?'plural':'singular'} noun`;
+}
+function qPoss(){
+  const o=rnd(OWN),n=rnd(NOUNS),pl=Math.random()<.5,word=pl?n.pl:n.w,ans=pos(o.p,n.g,pl);
+  const cand=[pos(o.p,n.g,!pl)];
+  if(o.p==='1p'||o.p==='2p')cand.push(pos(o.p,flip(n.g),pl),pos(o.p,flip(n.g),!pl));
+  shuffle(['1s','2s','3','1p','2p'].filter(p=>p!==o.p)).forEach(p=>cand.push(pos(p,n.g,pl)));
+  const opts=[ans];for(const c of cand){if(!opts.includes(c))opts.push(c);if(opts.length===4)break}
+  const en=`${o.en} ${pl?n.enPl:n.en}`;
+  let rule='';
+  if(o.p==='1p'||o.p==='2p'){rule=' Nuestro and vuestro agree with the <b>thing owned</b>, not with the owner.';
+    if(o.w.endsWith('as')&&n.g==='m')rule+=` Even though <i>${o.w}</i> is feminine, <i>${word}</i> is masculine.`;
+    if(o.w.endsWith('os')&&n.g==='f')rule+=` Even though <i>${o.w}</i> is masculine, <i>${word}</i> is feminine.`;}
+  else if(o.p==='3')rule=' Su / sus is the same for él, ella, usted, ellos, ellas and ustedes. Add -s only when the thing owned is plural.';
+  else if(o.p==='2s')rule=' Remember: <b>tu</b> (your) has no accent, <b>tú</b> (you) does.';
+  else rule=' Add -s only when the thing owned is plural.';
+  return {kind:'choice',topic:'Possessives',instr:'Choose the possessive for this owner and this thing.',key:'o'+o.w+word,
+    prompt:`<span class="owner">${o.w}</span> ${BLANK} ${word}`,hint:`(${en})`,options:shuffle(opts),answer:ans,review:`(${o.w}) ___ ${word} (${en})`,
+    ok:`<b>${ans} ${word}</b> = ${en}.`+(o.p==='1p'||o.p==='2p'?rule:''),
+    why:c=>`${cap(posDesc(c))}. Here the owner is <b>${o.w}</b> (${o.en}) and <b>${word}</b> is ${gname(n.g)} ${pl?'plural':'singular'}, so you need <b>${ans} ${word}</b>.`+rule};
+}
+
+/* ---------- error detective ---------- */
+const SPOT=[
+ ['*La problema es muy difícil.','El','<i>Problema</i> ends in -a but it is masculine: <b>el problema</b>.'],
+ ['*Mis amigo es muy simpático.','Mi','<i>Amigo</i> is singular, so use <b>mi</b>. <i>Mis</i> is only for plural nouns: mis amigos.'],
+ ['Tengo dos *lápizes en la mochila.','lápices','Nouns ending in -z change the z to c and add -es: lápiz → <b>lápices</b>.'],
+ ['*Esta libros son nuevos.','Estos','<i>Libros</i> is masculine plural, so use <b>estos</b>.'],
+ ['*La agua del mar está fría.','El','<i>Agua</i> is feminine, but it takes <b>el</b> to avoid the sound clash “la agua”. The adjective stays feminine: fría.'],
+ ['*Nuestro casa es muy grande.','Nuestra','<i>Nuestro</i> agrees with <i>casa</i>, which is feminine singular: <b>nuestra casa</b>.'],
+ ['*Aquel montañas son muy altas.','Aquellas','<i>Montañas</i> is feminine plural, so use <b>aquellas</b>.'],
+ ['Necesito comprar *unos manzanas.','unas','<i>Manzanas</i> is feminine plural: <b>unas manzanas</b>.'],
+ ['*El mano de Ana es pequeña.','La','<i>Mano</i> ends in -o but it is feminine: <b>la mano</b>.'],
+ ['Los *reys de España viven en Madrid.','reyes','Nouns ending in -y add -es: rey → <b>reyes</b>.'],
+ ['Me gusta *la clima de Noruega.','el','<i>Clima</i> ends in -a but it is masculine: <b>el clima</b>.'],
+ ['Mira *esos fotos de mi viaje.','esas','<i>Foto</i> is feminine (short for la fotografía), so: <b>esas fotos</b>.'],
+ ['En la calle hay tres *camiónes rojos.','camiones','Add -es to camión. The written accent disappears in the plural: <b>camiones</b>.'],
+ ['¿Cuál es *tus planeta favorito?','tu','<i>Planeta</i> is singular, so use <b>tu</b>. <i>Tus</i> is for plural nouns.'],
+ ['*Ese moto es muy rápida.','Esa','<i>Moto</i> is feminine (short for la motocicleta): <b>esa moto</b>.'],
+ ['Vosotros traéis *vuestra libros.','vuestros','<i>Vuestro</i> agrees with <i>libros</i> (masculine plural): <b>vuestros libros</b>.'],
+ ['Mi hermana tiene *una sofá azul.','un','<i>Sofá</i> ends in -a but it is masculine: <b>un sofá</b>.'],
+ ['Las *mujers trabajan en el hospital.','mujeres','<i>Mujer</i> ends in a consonant, so add -es: <b>mujeres</b>.'],
+ ['Ellas viven en *sus casa nueva.','su','<i>Casa</i> is singular, so use <b>su</b>. <i>Sus</i> is for plural nouns.'],
+ ['Hoy es *una día muy bonito.','un','<i>Día</i> ends in -a but it is masculine: <b>un día</b>.']];
+let spotDeck=[];
+function qSpot(){
+  if(!spotDeck.length)spotDeck=shuffle(SPOT);
+  const [s,fix,why]=spotDeck.pop(),raw=s.split(' '),wrong=raw.findIndex(w=>w.startsWith('*')),words=raw.map(w=>w.replace('*',''));
+  const fixed=words.map((w,i)=>i===wrong?fix:w).join(' ');
+  return {kind:'spot',topic:'Error hunt',instr:'One word in this sentence is wrong. Tap it.',key:s,words,wrong,fix,why,review:`${words.join(' ')}`,answerText:fixed};
+}
+const qMixed=()=>rnd([qArticle,qGender,qPlural,qDemo,qPoss,qSpot])();
+
+const GAMES=[
+ {id:'articles',name:'Article Blitz',es:'Artículos',desc:'Choose el, la, los, las, un, una, unos or unas for each noun.',gen:qArticle,learn:'articles'},
+ {id:'gender',name:'Gender Sort',es:'¿El o la?',desc:'Is it masculine or feminine? Watch out for the exceptions.',gen:qGender,learn:'exceptions'},
+ {id:'plural',name:'Plural Forge',es:'Plurales',desc:'Type the plural form yourself. Accents count!',gen:qPlural,learn:'gender'},
+ {id:'demos',name:'Near or Far',es:'Este, ese, aquel',desc:'Check the distance in the picture and pick the right demonstrative.',gen:qDemo,learn:'demos'},
+ {id:'poss',name:'Whose Is It?',es:'Posesivos',desc:'Match the possessive to the owner and the thing owned.',gen:qPoss,learn:'poss'},
+ {id:'spot',name:'Error Detective',es:'Encuentra el error',desc:'Each sentence has one mistake. Find it.',gen:qSpot,learn:'articles'},
+ {id:'boss',name:'Final Boss',es:'El Jefe Final',desc:'15 mixed questions from every game. You have 3 lives and earn double XP.',gen:qMixed,boss:true,unlock:3,learn:'articles'}];
+
+/* ---------- sound ---------- */
+let AC=null;
+function beep(kind){
+  if(!P.sound)return;
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const notes={right:[660,880],near:[520,620],wrong:[220,170],level:[523,659,784,1047]}[kind];
+    notes.forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=kind==='wrong'?'sawtooth':'triangle';o.frequency.value=f;
+      const t=AC.currentTime+i*.09;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.18);
+      o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.2)});
+  }catch(e){}
+}
+
+/* ---------- UI: top / toasts / modal ---------- */
+const ICON={
+ star:'<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.5L12 17.2l-5.9 3.2 1.3-6.5L2.5 9.3l6.6-.8z" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+ flame:'<svg viewBox="0 0 24 24"><path d="M12 2c1 3.5 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.2-4 2.5-5.2.2 1.7 1 2.8 2.2 3.2C11 8.5 11 5 12 2z"/></svg>',
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z"/></svg>',
+ crown:'<svg viewBox="0 0 24 24"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z"/></svg>'};
+const starsHTML=n=>`<span class="stars" aria-label="${n} of 3 stars">${[0,1,2].map(i=>ICON.star.replace('<svg',`<svg class="${i<n?'on':''}"`)).join('')}</span>`;
+
+function renderTop(){
+  const l=lvl(P.xp),lo=need(l),hi=need(l+1);
+  $('#t-lvl').textContent=l;
+  $('#t-name').textContent=P.name||'Player';
+  $('#t-title').textContent=title(l)[0];
+  $('#t-bar').style.width=((P.xp-lo)/(hi-lo)*100)+'%';
+  $('#t-xp').textContent=`${P.xp-lo} / ${hi-lo} XP to level ${l+1}`;
+  $('#soundbtn').setAttribute('aria-pressed',P.sound);
+}
+function toast(head,body){
+  const t=document.createElement('div');t.className='toast';t.innerHTML=`<b>${head}</b>${body}`;
+  $('#toasts').appendChild(t);setTimeout(()=>t.remove(),3400);
+}
+function award(id){
+  if(P.badges.includes(id))return;P.badges.push(id);save();
+  const b=BADGES.find(x=>x.id===id);toast('Badge: '+b.es,b.en);
+}
+function addXP(n){
+  const before=lvl(P.xp);P.xp+=n;save();renderTop();
+  const after=lvl(P.xp);
+  if(after>before){beep('level');const [es,en]=title(after);
+    $('#modal').innerHTML=`<div class="mcard" role="dialog" aria-label="Level up"><span class="eyebrow">¡Subes de nivel! · Level up</span><div class="lvl-tile"><small>Lv</small>${after}</div><h2>${es}</h2><p>${en}${after===3?'. The Final Boss is now unlocked!':''}</p><button class="btn primary" data-act="closemodal">¡Vamos!</button></div>`;
+    $('#modal').hidden=false;$('#modal .btn').focus();}
+}
+
+/* ---------- views ---------- */
+function show(v){
+  ['home','learn','game','results'].forEach(x=>$('#v-'+x).hidden=x!==v);
+  window.scrollTo(0,0);
+}
+function renderHome(){
+  const l=lvl(P.xp),[es,en]=title(l);
+  const pc=P.name?`<div class="row big"><div class="lvl-tile"><small>Lv</small>${l}</div><div><div class="eyebrow">Hola,</div><h3 style="font-size:1.5rem">${esc(P.name)}</h3><div style="color:var(--muted)">${es} · ${en}</div></div></div>
+    <div><div class="xpbar" style="width:100%;height:10px"><i style="width:${(P.xp-need(l))/(need(l+1)-need(l))*100}%"></i></div><div class="xptext" style="margin-top:6px">${P.xp} XP total · ${need(l+1)-P.xp} XP to level ${l+1}</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="chip">${P.badges.length} / ${BADGES.length} badges</span><button class="ghost" data-act="rename">Change name</button></div>`
+   :`<label for="player-name">What’s your name? <span style="font-weight:400;color:var(--muted)">(¿Cómo te llamas?)</span></label><form class="namerow" id="nameform"><input type="text" id="player-name" maxlength="24" placeholder="Your name" autocomplete="off"><button class="btn primary" type="submit">Save</button></form><p style="color:var(--muted);font-size:.9rem">Your XP and badges are saved on this device.</p>`;
+  $('#v-home').innerHTML=`<div class="wrap view">
+   <div class="hero tiles">
+     <div><span class="eyebrow" style="color:rgba(255,255,255,.75)">Spanish grammar practice</span>
+       <h1>Palabras <em>pequeñas</em>, puntos grandes</h1>
+       <p>Small words, big points. Practise articles, gender, plurals, demonstratives and possessives, earn XP and level up.</p>
+       <div class="actions"><button class="btn primary" data-act="learn" data-tab="articles">Study guide</button><button class="btn onhero" data-act="play" data-id="articles">Start with Article Blitz</button></div></div>
+     <div class="pcard">${pc}</div>
+   </div>
+   <div class="studycard"><div><span class="eyebrow">Step 1</span><h3>Check the study guide first</h3><p>All the rules from class in one place, with tables and examples. You can come back to it any time.</p></div><button class="btn blue" data-act="learn" data-tab="articles">Open the study guide</button></div>
+   <div class="sechead"><div><span class="eyebrow">Step 2</span><h2>Choose a game</h2></div><p>10 questions per round · 10 XP per answer · +5 XP streak bonus from 3 in a row</p></div>
+   <div class="grid">${GAMES.map(g=>{
+     const locked=g.unlock&&l<g.unlock;
+     if(g.boss)return `<button class="gcard boss" data-act="play" data-id="${g.id}" ${locked?'disabled':''}><span class="tiles-mini">${ICON.crown}</span><div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="chip">${g.es}</span>${starsHTML(P.best[g.id]||0)}</div><h3 style="font-size:1.6rem">${g.name}</h3><p>${locked?`Reach level ${g.unlock} to unlock. ${g.desc}`:g.desc}</p></div><span class="play">${locked?'Locked':'Fight →'}</span></button>`;
+     return `<button class="gcard" data-act="play" data-id="${g.id}"><div class="top-row"><span class="chip">${g.es}</span>${starsHTML(P.best[g.id]||0)}</div><h3>${g.name}</h3><p>${g.desc}</p><span class="play">Play →</span></button>`}).join('')}</div>
+   <div class="sechead"><h2>Badges</h2><p>${P.badges.length} of ${BADGES.length} earned</p></div>
+   <div class="badges">${BADGES.map(b=>`<div class="badge ${P.badges.includes(b.id)?'on':''}"><b>${b.es}</b><span>${b.en}</span></div>`).join('')}</div>
+  </div>`;
+  show('home');
+}
+
+/* ---------- study guide ---------- */
+const TABS=[['articles','Articles'],['gender','Gender & plural'],['exceptions','Exceptions'],['demos','Demonstratives'],['poss','Possessives']];
+const GUIDE={
+articles:`<h2>Artículos definidos e indefinidos</h2>
+ <p>Articles go before a noun. They change with the noun’s <b>gender</b> (masculine or feminine) and <b>number</b> (singular or plural).</p>
+ <div class="tablewrap"><table><tr><th></th><th colspan="2" class="m">Masculine</th><th colspan="2" class="f">Feminine</th></tr>
+ <tr><th></th><th>Definite</th><th>Indefinite</th><th>Definite</th><th>Indefinite</th></tr>
+ <tr><td class="rowh">Singular</td><td class="m">el<small>the</small></td><td class="m">un<small>a / an</small></td><td class="f">la<small>the</small></td><td class="f">una<small>a / an</small></td></tr>
+ <tr><td class="rowh">Plural</td><td class="m">los<small>the</small></td><td class="m">unos<small>some</small></td><td class="f">las<small>the</small></td><td class="f">unas<small>some</small></td></tr></table></div>
+ <div class="two"><div class="box"><h3>Definite (the)</h3><ul><li><span class="ex">el perro</span> → the dog</li><li><span class="ex">los perros</span> → the dogs</li><li><span class="ex">la casa</span> → the house</li><li><span class="ex">las casas</span> → the houses</li></ul></div>
+ <div class="box"><h3>Indefinite (a / an / some)</h3><ul><li><span class="ex">un libro</span> → a book</li><li><span class="ex">unos libros</span> → some books</li><li><span class="ex">una manzana</span> → an apple</li><li><span class="ex">unas manzanas</span> → some apples</li></ul></div></div>
+ <div class="box tip"><h3>How to choose the article</h3><ol><li>Is the noun masculine or feminine?</li><li>Is it singular or plural?</li><li>Does the English say “the” (definite) or “a / an / some” (indefinite)?</li></ol></div>`,
+gender:`<h2>Género y número de los sustantivos</h2>
+ <h3>Gender (masculine or feminine)</h3>
+ <ul><li>Nouns ending in <b>-o</b> are usually <b>masculine</b>: <span class="ex">el libro</span>, <span class="ex">el perro</span>.</li>
+ <li>Nouns ending in <b>-a</b> are usually <b>feminine</b>: <span class="ex">la casa</span>, <span class="ex">la silla</span>.</li>
+ <li>Nouns ending in <b>-e</b> or a consonant can be either: <span class="ex">el cine</span>, <span class="ex">la flor</span>, <span class="ex">el / la estudiante</span>. Learn them with their article.</li>
+ <li>There are many exceptions: <span class="ex">la mano</span>, <span class="ex">el sofá</span>, <span class="ex">la moto</span>… See the Exceptions tab.</li></ul>
+ <h3>Plural: four rules</h3>
+ <div class="tablewrap"><table><tr><th>The word ends in…</th><th>What to do</th><th>Examples</th></tr>
+ <tr><td class="rowh">a vowel</td><td>add <b>-s</b></td><td>toro → toros<br>silla → sillas<br>bolsa → bolsas</td></tr>
+ <tr><td class="rowh">a consonant</td><td>add <b>-es</b></td><td>camión → camiones<br>mujer → mujeres<br>árbol → árboles</td></tr>
+ <tr><td class="rowh">-z</td><td>change z → c, add <b>-es</b></td><td>lápiz → lápices<br>pez → peces</td></tr>
+ <tr><td class="rowh">-y</td><td>add <b>-es</b></td><td>ley → leyes<br>rey → reyes</td></tr></table></div>
+ <div class="box tip"><h3>Watch the accent</h3><p>Words ending in <b>-ión</b> lose the written accent in the plural: <span class="ex">camión → camiones</span>, <span class="ex">canción → canciones</span>. Others keep it: <span class="ex">árbol → árboles</span>, <span class="ex">lápiz → lápices</span>.</p></div>`,
+exceptions:`<h2>Exceptions to the masculine / feminine rule</h2>
+ <div class="two"><div class="box"><h3>Masculine words that end in -a</h3><ul class="wordlist">${['día|day','mapa|map','planeta|planet','sofá|sofa','clima|climate','problema|problem','tema|topic','idioma|language','poema|poem','sistema|system','programa|program'].map(x=>{const[w,e]=x.split('|');return `<li class="m">el ${w} <span>· ${e}</span></li>`}).join('')}</ul></div>
+ <div class="box"><h3>Feminine words that end in -o</h3><ul class="wordlist">${['mano|hand','radio|radio','foto|photo','moto|motorbike'].map(x=>{const[w,e]=x.split('|');return `<li class="f">la ${w} <span>· ${e}</span></li>`}).join('')}</ul><p style="font-size:.95rem">La foto is short for <i>la fotografía</i>. La moto is short for <i>la motocicleta</i>.</p></div></div>
+ <div class="box tip"><h3>Special case: el agua</h3><p><b>Agua</b> is a feminine noun, but it takes <b>el</b> instead of <b>la</b> to avoid the sound clash “la agua”.</p><p><span class="ex">El agua está fría.</span> (The water is cold.) Notice that the adjective <b>fría</b> is feminine!</p></div>`,
+demos:`<h2>Adjetivos demostrativos</h2>
+ <p>Demonstratives point at things. Choose the family by <b>distance from the speaker</b>, then the form by <b>gender and number</b>.</p>
+ ${scene(1,'libro').replace('class="scene"','class="scene" style="max-width:380px"')}
+ <div class="tablewrap"><table><tr><th></th><th>Next to the speaker</th><th>Near the speaker</th><th>Further away</th></tr>
+ <tr><td class="rowh">Masculine singular</td><td class="m">este<small>this</small></td><td class="m">ese<small>that</small></td><td class="m">aquel<small>that</small></td></tr>
+ <tr><td class="rowh">Feminine singular</td><td class="f">esta<small>this</small></td><td class="f">esa<small>that</small></td><td class="f">aquella<small>that</small></td></tr>
+ <tr><td class="rowh">Masculine plural</td><td class="m">estos<small>these</small></td><td class="m">esos<small>those</small></td><td class="m">aquellos<small>those</small></td></tr>
+ <tr><td class="rowh">Feminine plural</td><td class="f">estas<small>these</small></td><td class="f">esas<small>those</small></td><td class="f">aquellas<small>those</small></td></tr>
+ <tr><td class="rowh">Neutral (no noun after it)</td><td>esto</td><td>eso</td><td>aquello</td></tr>
+ <tr><td class="rowh">Place</td><td>aquí<small>here</small></td><td>ahí<small>there</small></td><td>allí<small>over there</small></td></tr></table></div>
+ <div class="two"><div class="box"><h3>Examples</h3><ul><li><span class="ex">Este libro es mío.</span> This book is mine.</li><li><span class="ex">¿Te gustan esas fotos?</span> Do you like those photos?</li><li><span class="ex">Aquellas montañas son altas.</span> Those mountains (over there) are high.</li><li><span class="ex">¿Qué es esto?</span> What is this?</li></ul></div>
+ <div class="box tip"><h3>Ese or aquel?</h3><p>Both mean “that”. Use <b>ese</b> for things near you, and <b>aquel</b> for things far away from you and the person you’re talking to.</p></div></div>`,
+poss:`<h2>Adjetivos posesivos</h2>
+ <p>Possessives always go <b>before</b> the noun: <span class="ex">mi casa</span>, <span class="ex">tus libros</span>.</p>
+ <div class="tablewrap"><table><tr><th>Owner</th><th>One thing</th><th>More than one thing</th><th>English</th></tr>
+ <tr><td class="rowh">yo</td><td>mi</td><td>mis</td><td class="rowh">my</td></tr>
+ <tr><td class="rowh">tú</td><td>tu</td><td>tus</td><td class="rowh">your</td></tr>
+ <tr><td class="rowh">él / ella / usted</td><td>su</td><td>sus</td><td class="rowh">his / her / your (formal)</td></tr>
+ <tr><td class="rowh">nosotros / nosotras</td><td><span class="m" style="padding:2px 6px;border-radius:6px">nuestro</span> <span class="f" style="padding:2px 6px;border-radius:6px">nuestra</span></td><td><span class="m" style="padding:2px 6px;border-radius:6px">nuestros</span> <span class="f" style="padding:2px 6px;border-radius:6px">nuestras</span></td><td class="rowh">our</td></tr>
+ <tr><td class="rowh">vosotros / vosotras</td><td><span class="m" style="padding:2px 6px;border-radius:6px">vuestro</span> <span class="f" style="padding:2px 6px;border-radius:6px">vuestra</span></td><td><span class="m" style="padding:2px 6px;border-radius:6px">vuestros</span> <span class="f" style="padding:2px 6px;border-radius:6px">vuestras</span></td><td class="rowh">your (you all)</td></tr>
+ <tr><td class="rowh">ellos / ellas / ustedes</td><td>su</td><td>sus</td><td class="rowh">their / your (formal)</td></tr></table></div>
+ <div class="two"><div class="box tip"><h3>Agree with the thing, not the owner</h3><p>Nuestro and vuestro change to match the <b>thing owned</b>. Two girls (nosotras) talking about their book say <span class="ex">nuestro libro</span>, not nuestra libro.</p></div>
+ <div class="box"><h3>Two small traps</h3><ul><li><b>su</b> can mean his, her, their or your (formal). Context tells you which.</li><li><b>tu</b> (your) has no accent. <b>tú</b> (you) does: <span class="ex">Tú tienes tu libro.</span></li></ul></div></div>`};
+const TAB_GAME={articles:'articles',gender:'plural',exceptions:'gender',demos:'demos',poss:'poss'};
+function openLearn(tab){
+  award('study');
+  $('#v-learn').innerHTML=`<div class="wrap view">
+   <div class="sechead"><div><span class="eyebrow">Study guide</span><h2>The rules from class</h2></div><button class="ghost" data-act="home">← Back to games</button></div>
+   <div class="tabs" role="tablist">${TABS.map(([id,n])=>`<button class="tab" role="tab" data-act="tab" data-tab="${id}" aria-selected="${id===tab}">${n}</button>`).join('')}</div>
+   <article class="panel">${GUIDE[tab]}<button class="btn primary go" data-act="play" data-id="${TAB_GAME[tab]}">Practise this: ${GAMES.find(g=>g.id===TAB_GAME[tab]).name} →</button></article></div>`;
+  show('learn');
+}
+
+/* ---------- game engine ---------- */
+let R=null;
+function startGame(id){
+  const g=GAMES.find(x=>x.id===id);
+  if(g.unlock&&lvl(P.xp)<g.unlock)return;
+  spotDeck=[];
+  R={g,i:0,total:g.boss?15:10,score:0,streak:0,bestStreak:0,lives:g.boss?3:null,xp:0,missed:[],seen:new Set(),q:null,answered:false};
+  show('game');nextQ();
+}
+function nextQ(){
+  if(R.i>=R.total||R.lives===0)return finish();
+  let q,t=0;do{q=R.g.gen();t++}while(R.seen.has(q.key)&&t<20);
+  R.seen.add(q.key);R.q=q;R.answered=false;renderQ();
+}
+function renderQ(){
+  const q=R.q,g=R.g;
+  let body='';
+  if(q.kind==='choice')body=`<div class="prompt">${q.prompt}</div><p class="hint">${q.hint}</p>
+    <div class="opts">${q.options.map((o,i)=>`<button class="opt ${q.optClass?q.optClass(o):''}" data-act="opt" data-i="${i}"><kbd>${i+1}</kbd>${o}</button>`).join('')}</div>`;
+  else if(q.kind==='type')body=`<div class="prompt">${q.prompt}</div><p class="hint">${q.hint}</p>
+    <form class="typerow" id="typeform"><input type="text" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the plural" aria-label="Plural"><button class="btn primary" type="submit">Check</button></form>
+    <div class="accents">${['á','é','í','ó','ú','ñ'].map(c=>`<button type="button" data-act="accent" data-c="${c}">${c}</button>`).join('')}</div>`;
+  else body=`<div class="spot">${q.words.map((w,i)=>`<button class="sw" data-act="spot" data-i="${i}">${w}</button>`).join(' ')}</div>`;
+  $('#v-game').innerHTML=`<div class="wrap game">
+   <div class="gamebar"><button class="ghost" data-act="home">← Games</button><div class="gb-title">${g.name}</div>
+    <div class="gb-stats">${R.lives!=null?`<span class="hearts" aria-label="${R.lives} lives">${[0,1,2].map(i=>ICON.heart.replace('<svg',`<svg class="${i<R.lives?'':'lost'}"`)).join('')}</span>`:''}
+     <span class="streak ${R.streak>=3?'hot':''}" aria-label="Streak">${ICON.flame}${R.streak}</span><span>+${R.xp} XP</span></div></div>
+   <div class="progress"><i style="width:${R.i/R.total*100}%"></i></div>
+   <div class="qcard"><div class="qmeta"><span class="chip">${q.topic}</span><span class="qnum">Question ${R.i+1} of ${R.total}</span></div>
+    <p class="instr">${q.instr}</p>${q.visual||''}${body}<div id="fb" class="fb" hidden></div></div></div>`;
+  const inp=$('#ans');if(inp&&matchMedia('(pointer:fine)').matches)inp.focus();
+}
+function resolve(status,html,answerText){
+  R.answered=true;let gained=0;
+  if(status!=='wrong'){
+    R.score++;R.streak++;R.bestStreak=Math.max(R.bestStreak,R.streak);
+    gained=status==='right'?10:5;if(R.streak>=3)gained+=5;if(R.g.boss)gained*=2;
+    R.xp+=gained;beep(status);if(R.streak>=10)award('streak10');
+  }else{R.streak=0;if(R.lives!=null)R.lives--;R.missed.push({p:R.q.review,a:answerText});beep('wrong')}
+  R.i++;
+  const heads={right:rnd(['¡Correcto!','¡Muy bien!','¡Genial!','¡Perfecto!','¡Excelente!']),near:'¡Casi! Almost',wrong:'No pasa nada. Not quite'};
+  const last=R.i>=R.total||R.lives===0;
+  const fb=$('#fb');fb.className='fb '+(status==='right'?'good':status==='near'?'near':'bad');
+  fb.innerHTML=`<h3>${heads[status]}${gained?`<span>+${gained} XP${R.streak>=3?' · streak bonus':''}</span>`:''}</h3><p>${html}</p><button class="btn ${status==='wrong'?'blue':'primary'}" data-act="next">${last?'See results':'Next'} →</button>`;
+  fb.hidden=false;
+  // refresh stats bar without re-rendering the question
+  const st=document.querySelector('.gb-stats');
+  st.querySelector('.streak').innerHTML=ICON.flame+R.streak;st.querySelector('.streak').classList.toggle('hot',R.streak>=3);
+  st.lastElementChild.textContent=`+${R.xp} XP`;
+  const h=st.querySelector('.hearts');if(h)h.innerHTML=[0,1,2].map(i=>ICON.heart.replace('<svg',`<svg class="${i<R.lives?'':'lost'}"`)).join('');
+  document.querySelector('.progress i').style.width=(R.i/R.total*100)+'%';
+  if(gained)addXP(gained);
+  const nb=fb.querySelector('.btn');
+  if($('#modal').hidden)nb.focus({preventScroll:true});
+  fb.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function pickOpt(i){
+  if(R.answered)return;const q=R.q,c=q.options[i],ok=c===q.answer;
+  const bs=[...document.querySelectorAll('.opt')];bs.forEach(b=>b.disabled=true);
+  bs[i].classList.add(ok?'correct':'wrong');if(!ok)bs[q.options.indexOf(q.answer)].classList.add('correct');
+  resolve(ok?'right':'wrong',ok?q.ok:q.why(c),q.answer);
+}
+function submitType(){
+  if(R.answered)return;const inp=$('#ans'),r=R.q.check(inp.value);
+  if(!inp.value.trim()){inp.focus();return}
+  inp.disabled=true;inp.classList.add(r.status==='right'?'correct':r.status);
+  document.querySelectorAll('.accents button,#typeform .btn').forEach(b=>b.disabled=true);
+  resolve(r.status,r.html,R.q.answer);
+}
+function pickSpot(i){
+  if(R.answered)return;const q=R.q,bs=[...document.querySelectorAll('.sw')];bs.forEach(b=>b.disabled=true);
+  const ok=i===q.wrong,w=q.words[q.wrong];
+  bs[q.wrong].classList.add('correct');bs[q.wrong].innerHTML=`<span class="was">${w}</span>${q.fix}`;
+  if(!ok)bs[i].classList.add('wrong');
+  resolve(ok?'right':'wrong',ok?`<b>${w}</b> → <b>${q.fix}</b>. ${q.why}`:`<b>${q.words[i]}</b> is correct here. The mistake was <b>${w}</b> → <b>${q.fix}</b>. ${q.why}`,q.answerText);
+}
+function finish(){
+  const g=R.g,won=g.boss?R.lives>0:true;let bonus=0;
+  if(R.score===R.total){bonus+=30;if(!g.boss)award('perfect')}
+  if(g.boss&&won){bonus+=50;award('boss')}
+  const ratio=R.score/R.total,st=!won?0:ratio>=.9?3:ratio>=.7?2:ratio>=.5?1:0;
+  P.best[g.id]=Math.max(P.best[g.id]||0,st);P.played[g.id]=true;save();
+  award('first');if(GAMES.filter(x=>!x.boss).every(x=>P.played[x.id]))award('explorer');
+  let head,sub;
+  if(g.boss&&!won){head='El jefe gana esta vez';sub='The boss wins this time. Review your mistakes below and try again.'}
+  else if(ratio>=.9){head='¡Fantástico!';sub=g.boss?'You beat the Final Boss!':'Amazing work. You really know this.'}
+  else if(ratio>=.7){head='¡Muy bien!';sub='Great job. A little more practice and you’ll get 3 stars.'}
+  else if(ratio>=.5){head='¡Bien hecho!';sub='Good effort. Check the study guide and play again.'}
+  else{head='¡Sigue practicando!';sub='Keep practising. Read the study guide, then try again.'}
+  $('#v-results').innerHTML=`<div class="wrap results">
+   <div class="rcard"><span class="eyebrow">${g.name}</span>${starsHTML(st)}<h2>${head}</h2><p style="color:var(--muted)">${sub}</p>
+    <div class="rstats"><div><b>${R.score}/${R.total}</b><span>correct</span></div><div><b>+${R.xp+bonus}</b><span>XP earned${bonus?` (incl. +${bonus} bonus)`:''}</span></div><div><b>${R.bestStreak}</b><span>best streak</span></div></div>
+    <div class="ractions"><button class="btn primary" data-act="play" data-id="${g.id}">Play again</button><button class="btn soft" data-act="learn" data-tab="${g.learn}">Study guide</button><button class="btn soft" data-act="home">All games</button></div></div>
+   ${R.missed.length?`<div class="review"><h3>Review your mistakes</h3><ul>${R.missed.map(m=>`<li><span>${m.p}</span><b>${m.a}</b></li>`).join('')}</ul></div>`:''}
+  </div>`;
+  show('results');
+  if(bonus)addXP(bonus);
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='home')renderHome();
+  else if(a==='learn'||a==='tab')openLearn(b.dataset.tab);
+  else if(a==='play')startGame(b.dataset.id);
+  else if(a==='opt')pickOpt(+b.dataset.i);
+  else if(a==='spot')pickSpot(+b.dataset.i);
+  else if(a==='next')nextQ();
+  else if(a==='accent'){const inp=$('#ans');const s=inp.selectionStart??inp.value.length,en=inp.selectionEnd??s;inp.value=inp.value.slice(0,s)+b.dataset.c+inp.value.slice(en);inp.focus();inp.setSelectionRange(s+1,s+1)}
+  else if(a==='sound'){P.sound=!P.sound;save();renderTop();beep('right')}
+  else if(a==='rename'){P.name='';save();renderHome();renderTop();$('#player-name').focus()}
+  else if(a==='closemodal'){$('#modal').hidden=true;const nb=document.querySelector('#fb .btn');if(nb)nb.focus()}
+});
+document.addEventListener('submit',e=>{
+  e.preventDefault();
+  if(e.target.id==='typeform')submitType();
+  if(e.target.id==='nameform'){const v=$('#player-name').value.trim();if(v){P.name=v;save();renderTop();renderHome()}}
+});
+document.addEventListener('keydown',e=>{
+  if(!$('#modal').hidden){if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();$('#modal').hidden=true}return}
+  if($('#v-game').hidden||!R)return;
+  if(e.target.tagName==='BUTTON'||e.target.tagName==='INPUT')return;
+  if(!R.answered&&R.q.kind==='choice'){const n=+e.key;if(n>=1&&n<=R.q.options.length)pickOpt(n-1)}
+  else if(R.answered&&e.key==='Enter')nextQ();
+});
+
+renderTop();renderHome();
+</script>
+</body>
+</html>
